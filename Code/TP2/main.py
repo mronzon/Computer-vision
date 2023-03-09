@@ -60,7 +60,7 @@ if __name__ == "__main__":
         os.mkdir(result_folder)
 
     _, _, filenames = next(walk(args.folder))
-
+    i = 0
     for filename in filenames:
         image = cv2.imread(filename)  # Read the image
         equalized = equalize_luminosity(image)  # Equalize the luminosity
@@ -70,12 +70,8 @@ if __name__ == "__main__":
         img = img_as_float(equalized)
 
         segments_slic = slic(img, n_segments=100, compactness=10, sigma=1)
-
-        if not os.path.exists(result_folder + "\\" + os.path.splitext(filename)[0]):
-            os.mkdir(result_folder + "\\" + os.path.splitext(filename)[0])
-
         unique_label = np.unique(segments_slic)
-        i = 0
+
         for label in unique_label:
             segment_label = segments_slic.copy()
             segment_label[segment_label != label] = 0
@@ -84,6 +80,6 @@ if __name__ == "__main__":
             if black_proportion(result) > 0.5:
                 continue
 
-            imsave(result_folder + "\\" + os.path.splitext(filename)[0] + "\\rock_" + str(i) + os.path.splitext(filename)[1], img_as_ubyte(result))  # Save the image
+            imsave(result_folder + "\\rock_" + str(i) + os.path.splitext(filename)[1], img_as_ubyte(result))  # Save the image
             i += 1
 
