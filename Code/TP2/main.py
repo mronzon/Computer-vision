@@ -2,13 +2,15 @@ import argparse
 import os
 import cv2
 from skimage import img_as_float, img_as_ubyte
+from skimage.feature import peak_local_max
 from skimage.io import imsave
+from scipy import ndimage as ndi
 import numpy as np
+import pandas as pd
 from os import walk
+from skimage.segmentation import slic, watershed
 
-from skimage.segmentation import slic, mark_boundaries, find_boundaries
-
-parser = argparse.ArgumentParser(description="Récupération des éléments presents sur un sol.")
+parser = argparse.ArgumentParser(description="Segmentations d'une image remplis de caillou en petite images possédant un caillou à chaque fois.")
 parser.add_argument("--folder", default="", type=str, help="Le chemin vers le dossier contenant les images.")
 args = parser.parse_args()
 
@@ -61,6 +63,8 @@ if __name__ == "__main__":
 
     _, _, filenames = next(walk(args.folder))
     i = 0
+    slic_data = {"Moyenne de B": [], "Moyenne de G": [], "Moyenne de R": []}
+    index = []
     for filename in filenames:
         image = cv2.imread(filename)  # Read the image
         equalized = equalize_luminosity(image)  # Equalize the luminosity
@@ -75,11 +79,17 @@ if __name__ == "__main__":
         for label in unique_label:
             segment_label = segments_slic.copy()
             segment_label[segment_label != label] = 0
-            image_mask = image[thresh_gray_equalized == 0] = 0
             result = crop_image(image, segment_label)
             if black_proportion(result) > 0.5:
                 continue
-
             imsave(result_folder + "\\rock_" + str(i) + os.path.splitext(filename)[1], img_as_ubyte(result))  # Save the image
             i += 1
+            # Creation of the DataFrame.
+            index.append(f"Grain isolé {i}")
+            slic_data["Moyenne de B"].append(np.average(result[0, :, :]))
+            slic_data["Moyenne de G"].append(np.average(result[:, 0, :]))
+            slic_data["Moyenne de R"].append(np.average(result[:, :, 0]))
+
+    dataFrame_slic = pd.DataFrame(slic_data, index=index)
+    print(dataFrame_slic)
 
